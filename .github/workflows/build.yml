@@ -1,0 +1,50 @@
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - main  # 建议限制 push 触发的分支
+  pull_request: # 作为门禁，强烈建议在 PR 提交时也触发检查
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    name: Build, Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          cache: true
+
+
+      - name: Verify Dependencies
+        run: go mod verify
+
+
+      - name: Check Code Formatting
+        run: |
+          if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then
+            echo "❌ 以下文件格式不规范，请在本地运行 'go fmt ./...' 后重新提交："
+            gofmt -s -l .
+            exit 1
+          fi
+
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          args: --timeout=5m
+
+
+      - name: Run Tests
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+
+      - name: Build
+        run: CGO_ENABLED=0 go build -v -o docker-pull ./cmd/docker-pull

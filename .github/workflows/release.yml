@@ -1,0 +1,63 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Cross-compile for all platforms
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          cache: true
+
+      - name: Build for Linux amd64
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -v -o docker-pull-linux-amd64 ./cmd/docker-pull
+
+      - name: Build for Linux arm64
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -v -o docker-pull-linux-arm64 ./cmd/docker-pull
+
+      - name: Build for Linux 386
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -v -o docker-pull-linux-386 ./cmd/docker-pull
+
+      - name: Build for Linux arm
+        run: CGO_ENABLED=0 GOOS=linux GOARCH=arm go build -v -o docker-pull-linux-arm ./cmd/docker-pull
+
+      - name: Build for Windows amd64
+        run: GOOS=windows GOARCH=amd64 go build -v -o docker-pull-windows-amd64.exe ./cmd/docker-pull
+
+      - name: Build for Windows arm64
+        run: GOOS=windows GOARCH=arm64 go build -v -o docker-pull-windows-arm64.exe ./cmd/docker-pull
+
+      - name: Build for Windows 386
+        run: GOOS=windows GOARCH=386 go build -v -o docker-pull-windows-386.exe ./cmd/docker-pull
+
+      - name: Build for macOS amd64
+        run: GOOS=darwin GOARCH=amd64 go build -v -o docker-pull-darwin-amd64 ./cmd/docker-pull
+
+      - name: Build for macOS arm64
+        run: GOOS=darwin GOARCH=arm64 go build -v -o docker-pull-darwin-arm64 ./cmd/docker-pull
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        if: github.ref_type == 'tag'
+        with:
+          files: |
+            docker-pull-linux-amd64
+            docker-pull-linux-arm64
+            docker-pull-linux-386
+            docker-pull-linux-arm
+            docker-pull-windows-amd64.exe
+            docker-pull-windows-arm64.exe
+            docker-pull-windows-386.exe
+            docker-pull-darwin-amd64
+            docker-pull-darwin-arm64
+          prerelease: false
+          token: ${{ secrets.GH_TOKEN }}
